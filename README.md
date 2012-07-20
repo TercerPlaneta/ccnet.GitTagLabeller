@@ -1,6 +1,6 @@
 # Git tag labeller plugin for CCNET  #
 
-This labeller plugin builds the $(CCNetLabel) variable from the last tag on a git repository branch - usually downloaded using the git source control provider.
+This labeller plugin builds the CCNet internal label from the last tag on a git repository branch - usually downloaded using the git source control provider.
 
 As any other CCNet labeller, used in conjunction with the AssemblyInfo task in  [MsBuildTasks](https://github.com/loresoft/msbuildtasks) or with a manual script it allows setting the AssemblyVersion - AssemblyFileVersion attributes of an MSBuild project.
 
@@ -54,7 +54,14 @@ This allows for handling both QA commits (having no tag) and tagged releases, as
 * *commitCountOffset* is optional (defaults to 0)
 * *skipPrefix* is optional 
 * *executable* is optional (by default searchs in PATH)
-	
+
+## How to make use of the label	
+
+* In an MSBuild target you may access the value as $(CCNetLabel)
+* In NAnt you may use $[CCNetLabel]
+* To use the value inside the CCNet config blocks, you need to write it as a dynamic parameter, i.e. $[$CCNetLabel] . This is valid only for CCNet 1.5+
+
+
 ## Installation ##
 
 * Before building, update the *ThoughtWorks.CruiseControl.Core.dll* and *ThoughtWorks.CruiseControl.Remote.dll* in the *lib* folder with the ones corresponding to your CCNET version (found in *server* subfolder of the CruiseControl.Net program files folder)
