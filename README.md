@@ -7,7 +7,7 @@ As any other CCNet labeller, used in conjunction with the AssemblyInfo task in  
 
 ## Building the label ##
 
-The resulting label is build from the output of this command:
+The resulting label is built from the output of this command:
 	
 	git describe
 
