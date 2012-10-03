@@ -5,6 +5,7 @@ using Exortech.NetReflector;
 using ThoughtWorks.CruiseControl.Core;
 using ThoughtWorks.CruiseControl.Core.Util;
 using ThoughtWorks.CruiseControl.Remote;
+using ThoughtWorks.CruiseControl.Core.Label;
 
 namespace CcNet.Labeller
 {
@@ -13,7 +14,7 @@ namespace CcNet.Labeller
     /// The result is available via the <c>$(CCNetLabel)</c> property
     /// </summary>
     [ReflectorType ("gitTagLabeller")]
-    public class GitTagLabeller : ILabeller
+    public class GitTagLabeller : LabellerBase, ILabeller
     {
         /// <summary>
         /// Gets or sets the path to the Git working directory.
@@ -53,23 +54,23 @@ namespace CcNet.Labeller
         [ReflectorProperty("executable", Required = false)]
         public string Executable = "git";
 
+        /// <summary>
+        /// Gets or sets a branch name to checkout before getting the label
+        /// </summary>
+        /// <value>Branch Name</value>
+        [ReflectorProperty("branch", Required = false)]
+        public string branch = "";
 
-        public void Run (IIntegrationResult result)
+        public override string Generate(IIntegrationResult integrationResult)
         {
-            result.Label = Generate(result);
-        }
+            string workingDir = integrationResult.BaseFromWorkingDirectory(WorkingDirectory); 
 
-        public string Generate(IIntegrationResult result)
-        {
-            string args = "describe";
-            string workingDir = result.BaseFromWorkingDirectory(WorkingDirectory);
-            var processInfo = new ProcessInfo(Executable, args, workingDir);
-            processInfo.StreamEncoding = Encoding.UTF8;
+            // if branch name specified, checkout to it
+            if (!String.IsNullOrEmpty(branch))
+                GitExecute(workingDir, "checkout -q -f " + branch);
 
-            Log.Info("Execute: git " + args);
-
-            string s = (new ProcessExecutor()).Execute(processInfo).StandardOutput.Trim();
-
+            // get output from "git describe"
+            string s = GitExecute(workingDir, "describe");
             if (s == null)
                 throw new InvalidDataException("No tag found");
 
@@ -99,6 +100,18 @@ namespace CcNet.Labeller
             }
             throw new ArgumentException("Invalid commitCountAction: " + CommitCountAction);
  
+        }
+
+        private string GitExecute(string workingDir, string args)
+        {
+            string s;
+            var processInfo = new ProcessInfo(Executable, args, workingDir);
+            processInfo.StreamEncoding = Encoding.UTF8;
+
+            Log.Info("Execute: git " + args);
+
+            s = (new ProcessExecutor()).Execute(processInfo).StandardOutput.Trim();
+            return s;
         }
 
     }

@@ -21,7 +21,10 @@ Otherwise, the number of commits ahead the tag is combined with the tag name to 
 
 If *concatenate* or *replace* are used, an optional *commitCountOffset* may be specified
 
-In all cases, if a *skipPrefix* value is provided, that prefix is extracted from the first part of the tag name.
+In all cases:
+
+* if a *skipPrefix* value is provided, that prefix is extracted from the first part of the tag name.
+* if a *branch* value is provided, the specified branch is checked out before building the label with *git describe*. This is useful when working with 'release' branches that have their own tags
 
 ## Examples ##
 
@@ -49,18 +52,19 @@ This allows for handling both QA commits (having no tag) and tagged releases, as
 		<commitCountOffset>100</commitCountOffset>
 		<skipPrefix>my_label_prefix</skipPrefix>
 		<executable>path\git.exe</executable>
+		<dynamicValues>.....</dynamicValues>
 	</labeller>
 
 * *commitCountOffset* is optional (defaults to 0)
 * *skipPrefix* is optional 
 * *executable* is optional (by default searchs in PATH)
+* *dynamicValues*: starting with version 1.0.1 of this plugin, [dynamic values](http://build.sharpdevelop.net/ccnet/doc/CCNET/Dynamic%20Parameters.html) may be used either explicitly or by implied replacement.
 
 ## How to make use of the label	
 
 * In an MSBuild target you may access the value as $(CCNetLabel)
 * In NAnt you may use $[CCNetLabel]
 * To use the value inside the CCNet config blocks, you need to write it as a dynamic parameter, i.e. $[$CCNetLabel] . This is valid only for CCNet 1.5+
-
 
 ## Installation ##
 
