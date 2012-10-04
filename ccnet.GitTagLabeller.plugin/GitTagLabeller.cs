@@ -110,8 +110,8 @@ namespace CcNet.Labeller
 
             Log.Info("Execute: git " + args);
 
-            s = (new ProcessExecutor()).Execute(processInfo).StandardOutput.Trim();
-            return s;
+            s = (new ProcessExecutor()).Execute(processInfo).StandardOutput;
+            return s==null? s: s.Trim();
         }
 
     }
