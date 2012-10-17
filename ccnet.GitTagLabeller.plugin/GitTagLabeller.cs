@@ -59,15 +59,22 @@ namespace CcNet.Labeller
         /// </summary>
         /// <value>Branch Name</value>
         [ReflectorProperty("branch", Required = false)]
-        public string branch = "";
+        public string Branch = "";
+
+        /// <summary>
+        /// Specifies an optional auto-increment of build or revision segments of the version
+        /// </summary>
+        /// <value>'none' (default), 'build', 'revision'</value>
+        [ReflectorProperty("autoIncrement", Required = false)]
+        public string AutoIncrement = "none";
 
         public override string Generate(IIntegrationResult integrationResult)
         {
             string workingDir = integrationResult.BaseFromWorkingDirectory(WorkingDirectory); 
 
             // if branch name specified, checkout to it
-            if (!String.IsNullOrEmpty(branch))
-                GitExecute(workingDir, "checkout -q -f " + branch);
+            if (!String.IsNullOrEmpty(Branch))
+                GitExecute(workingDir, "checkout -q -f " + Branch);
 
             // get output from "git describe"
             string s = GitExecute(workingDir, "describe");
@@ -79,8 +86,12 @@ namespace CcNet.Labeller
             if (SkipPrefix.Length > 0 && tagName.StartsWith(SkipPrefix))
                 tagName = tagName.Substring(SkipPrefix.Length);
 
-            if (segm.Length == 1)  // no commits ahead
+            if (segm.Length == 1   // no commits ahead
+                || (CommitCountAction.ToLower() == "ignore" && AutoIncrement == "none"))
+            {
+                Log.Debug("[gitTagLabeller] Label matches last Git tag: '{0}'", tagName);
                 return tagName;    // return tag as label
+            }
             int count;
             if (!int.TryParse(segm[1], out count))
                 throw new InvalidDataException("Invalid return from Git describe");
@@ -89,17 +100,44 @@ namespace CcNet.Labeller
             switch (CommitCountAction.ToLower())
             {
                 case "concatenate":
-                    return tagName + "." + countText;
+                    tagName += "." + countText;
+                    Log.Debug("[gitTagLabeller] Label after concatenating commit count on last Git tag: '{0}'", tagName);
+                    break;
 
                 case "ignore":
-                    return tagName;
+                    string[] vers = tagName.Split('.');
+                    short major, minor, revision, build;
+                    if (vers.Length != 4
+                        || !short.TryParse(vers[0], out major)
+                        || !short.TryParse(vers[1], out minor)
+                        || !short.TryParse(vers[2], out build)
+                        || !short.TryParse(vers[3], out revision))
+                        throw new ArgumentException("May not use autoIncrement with version '" + tagName + "'. Verify last Git tag");
+                    if (AutoIncrement == "revision")
+                        ++revision;
+                    else if (AutoIncrement == "build")
+                    {
+                        ++build;
+                        revision = 0;
+                    }
+                    else
+                        throw new ArgumentException("Invalid autoIncrement: " + AutoIncrement);
+
+                    tagName = String.Format("{0}.{1}.{2}.{3}", major, minor, build, revision);
+                    Log.Debug("[gitTagLabeller] Label after incrementing {1} in last Git tag: '{0}'", tagName, AutoIncrement);
+                    break;
 
                 case "replace":
                     int i = tagName.LastIndexOf('.');
-                    return (i<0? tagName+"." : tagName.Substring(0, i+1)) + countText;
+                    tagName = (i < 0 ? tagName + "." : tagName.Substring(0, i + 1)) + countText;
+                    Log.Debug("[gitTagLabeller] Label after replacing commit count in last Git tag: '{0}'", tagName);
+                    break;
+
+                default:
+                    throw new ArgumentException("Invalid commitCountAction: " + CommitCountAction);
             }
-            throw new ArgumentException("Invalid commitCountAction: " + CommitCountAction);
- 
+            return tagName;
+
         }
 
         private string GitExecute(string workingDir, string args)

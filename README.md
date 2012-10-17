@@ -11,7 +11,7 @@ The resulting label is built from the output of this command:
 	
 	git describe
 
-If the last commit is the one pointed by the tag, the returned label is just the tag name - without the optional prefix, see below.
+If the last commit is the one pointed by the tag, the returned label is just the tag name - without the optional prefix, and optionally auto-incremented: see below.
 
 Otherwise, the number of commits ahead the tag is combined with the tag name to build the label. Several options are available, configuring the *commitCountAction* element (see example below)
 
@@ -21,6 +21,13 @@ Otherwise, the number of commits ahead the tag is combined with the tag name to 
 
 If *concatenate* or *replace* are used, an optional *commitCountOffset* may be specified
 
+If *ignore* is used, and the label has the 'N.N.N.N' assembly version format (after stripping the optional prefix from the tag) an optional *autoIncrement* setting may be specified with the following values:
+
+* 'none' (default) - do not auto increment
+* 'revision' - auto increment revision (4th segment)
+* 'build' - autoincrement build (3rd segment). If build segment is incremented, revision segment is set to zero.
+
+
 In all cases:
 
 * if a *skipPrefix* value is provided, that prefix is extracted from the first part of the tag name.
@@ -28,13 +35,7 @@ In all cases:
 
 ## Examples ##
 
-Example 1:
-
-* code is 3 commits ahead of 'ReleaseCandidate' tag
-* commitCountAction is configured as '*concatenate*'
-* ==> the resulting label is 'ReleaseCandidate.3'
-
-Example 2:
+Example 1: **replace**
 
 * code is 3 commits ahead of 'v1.0.12.0' tag
 * skipPrefix is configured as 'v'
@@ -44,18 +45,36 @@ Example 2:
 
 This allows for handling both QA commits (having no tag) and tagged releases, as suggested in this post: [Get Going with a Minimalistic Git Workflow](http://pampanotes.tercerplaneta.com/2012/07/get-going-with-minimalistic-git.html)
 
+Example 2: **concatenate**
+
+* code is 3 commits ahead of 'ReleaseCandidate' tag
+* commitCountAction is configured as '*concatenate*'
+* ==> the resulting label is 'ReleaseCandidate.3'
+
+Example 3: **ignore** + autoincrement
+
+* last tag is 'v4.0.2.17' (with or without further commits)
+* skipPrefix is configured as 'v'
+* commitCountAction is configured as '*ignore*'
+* autoIncrement is configured as '*revision*'
+* ==> the resulting label is '4.0.2.18'
+
+This is useful for a "tag based autoincremental" versioning, when combined with some way of pushing the label as a new tag into the repository - see git source control plugin for more information.
+
 ## Usage ##
 
 	<labeller type="gitTagLabeller">
 		<workingDirectory>my_git_folder</workingDirectory>
 		<commitCountAction>replace</commitCountAction>
 		<commitCountOffset>100</commitCountOffset>
+		<autoIncrement>none</autoIncrement>
 		<skipPrefix>my_label_prefix</skipPrefix>
 		<executable>path\git.exe</executable>
 		<dynamicValues>.....</dynamicValues>
 	</labeller>
 
 * *commitCountOffset* is optional (defaults to 0)
+* *autoincrement* is optional (defaults to none)
 * *skipPrefix* is optional 
 * *executable* is optional (by default searchs in PATH)
 * *dynamicValues*: starting with version 1.0.1 of this plugin, [dynamic values](http://build.sharpdevelop.net/ccnet/doc/CCNET/Dynamic%20Parameters.html) may be used either explicitly or by implied replacement.
